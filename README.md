@@ -73,3 +73,8 @@ This proposal scales the methodology successfully used for uuhelper, which porte
 # Future Possibilities
 
 Validating the system with ripgrep paves the way for porting advanced terminal-based development tools. If we can handle the concurrency requirements of ripgrep, the path is clear to port editors like Vim or Helix, bringing us significantly closer to a fully independent Twizzler development environment.
+
+
+# Eng Goals
+- Week 6: Run a successful single-threaded search on a text file, proving the core mlibc translation layer is functional.
+- Week 10: Conduct performance benchmarks and finalize the porting template to provide a blueprint for future complex tools like Vim or Helix. -> Create documentation for ripgrep for the twizzler notebook -> What i had to do to port it
