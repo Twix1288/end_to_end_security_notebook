@@ -57,7 +57,7 @@ The porting process is divided into four primary technical milestones:
 
     This prevents crashes when the application queries terminal properties (e.g., window size or color support).
 
-#Rationale and Alternatives
+# Rationale and Alternatives
 
     Alternative: Develop a native Twizzler search utility from scratch.
 
