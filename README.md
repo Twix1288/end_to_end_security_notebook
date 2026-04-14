@@ -13,7 +13,7 @@ To achieve a self-hosted development cycle, Twizzler requires a robust toolchain
     Architectural Validation: Success proves that the mlibc translation layer can support complex, concurrent Rust applications running on top of Twizzler’s unique object-oriented architecture.
 
 # Guide-level Explanation
-# User Experience
+User Experience
 
 Once integrated, users can perform high-speed recursive searches within the Twizzler shell using standard syntax:
 Bash
