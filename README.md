@@ -66,7 +66,7 @@ The porting process is divided into four primary technical milestones:
 # Prior Art
 
 This proposal scales the methodology successfully used for uuhelper, which ported basic coreutils (like ls and cat). This project moves beyond simple I/O into the realm of complex, multi-threaded performance tools.
-Unresolved Questions
+# Unresolved Questions
 
     Memory Protection: Does the current Twizzler mmap implementation support the full suite of memory protection flags required by ripgrep (e.g., specific combinations of PROT_EXEC or PROT_WRITE)?
 
