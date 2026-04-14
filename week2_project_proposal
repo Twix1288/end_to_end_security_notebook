@@ -1,41 +1,79 @@
-#Project Proposal: Importing ripgrep utility into Twizzler
+Project Proposal: Porting ripgrep to Twizzler OS
 
-I was thinking of porting the Rust ripgrep CLI utility to Twizzler OS. The goal is to provide a standard search tool for the system while testing our mlibc POSIX compatibility layer with multithreading and memory mapping.
+This proposal outlines the plan to port the Rust-based ripgrep (rg) CLI utility to Twizzler OS. This effort serves as a critical stress test for the mlibc POSIX compatibility layer, specifically targeting multithreading and memory-mapping capabilities within Twizzler's unique object-oriented architecture.
 Motivation
 
-To support a self-hosted development cycle on Twizzler, we need standard tools. Because ripgrep aggressively uses pthreads and mmap, porting it serves as an excellent stress test. It will prove that our mlibc translation layer can handle complex, concurrent Rust applications running on top of Twizzler's object architecture.
-Guide-level explanation
+To achieve a self-hosted development cycle on Twizzler, the environment requires standard, high-performance tooling.
 
-Users will be able to run rg <pattern> in the Twizzler shell exactly as they would on Linux.
+Why ripgrep?
 
-For developers, this project acts as a template for porting complex external crates. Instead of rewriting tools natively, we will clone ripgrep into the workspace, compile it, and map any missing standard C library functions to Twizzler's runtime APIs so standard paths resolve to object IDs.
-Reference-level explanation
+    Stress Test: It aggressively utilizes pthreads and mmap.
 
-The implementation should be like this:
+    Verification: Porting it proves that our mlibc translation layer can handle complex, concurrent Rust applications.
 
-   -  Workspace Setup: Add ripgrep to [workspace.members] and the initrd in the root Cargo.toml.
+    Validation: Ensures standard POSIX paths resolve correctly to Twizzler Object IDs through the runtime.
 
-   -  File I/O Mapping: Attempt to compile the tool and map missing POSIX calls in sysdeps.cpp (like open, stat) to Twizzler's twz_rt_* APIs.
+Guide-level Explanation
+User Experience
 
-   -  Memory & Threads: Verify that mmap correctly maps Twizzler object pages into memory, and ensure pthread_create maps properly to Twizzler's thread spawner.
+Users will be able to execute search queries in the Twizzler shell using standard syntax:
+Bash
 
-   - Terminal Stubs: Write dummy ioctl stubs in sysdeps.cpp that return safe defaults, preventing the app from crashing when it queries terminal properties like window size or color support.
+rg <pattern> [path]
 
-Rationale and alternatives
+The behavior will mirror the Linux experience, providing fast, recursive searches across Twizzler objects.
+Developer Experience
 
-    Alternative: Write a native search tool from scratch.
+This project serves as a blueprint for porting complex external crates. Instead of rewriting tools from scratch, developers will:
 
-    Rationale against: Way too much time taking and we can easily prove ripgrep can work on twizzler
+    Clone the external source into the workspace.
 
-Prior art
+    Compile against the Twizzler target.
 
-This proposal scales up the exact process we already used for uuhelper (which successfully ported simpler coreutils like ls and cat).
+    Map missing C library functions to Twizzler runtime APIs.
 
-Unresolved questions
+Reference-level Explanation
 
-    Does our mmap implementation support all the specific memory protection flags ripgrep expects?
+The implementation is divided into four key technical milestones:
+1. Workspace Integration
 
+    Add ripgrep to the [workspace.members] in the root Cargo.toml.
 
-Future possibilities
+    Include the resulting binary in the initrd configuration to ensure it is available at boot.
 
-Successfully running a heavily multi-threaded tool like ripgrep proves our mlibc layer is robust, clearing the path to port complex terminal text editors like vim or helix next.
+2. File I/O & Path Mapping
+
+    Identify missing POSIX calls during the compilation phase.
+
+    Implement shims in sysdeps.cpp for functions like open and stat.
+
+    Bridge these calls to twz_rt_* APIs to translate standard file paths into Twizzler object references.
+
+3. Memory & Concurrency
+
+    Memory Mapping: Verify that mmap correctly maps Twizzler object pages into the process address space.
+
+    Threading: Ensure pthread_create calls map accurately to the Twizzler thread spawner.
+
+4. Terminal Interface
+
+    Implement dummy ioctl stubs in sysdeps.cpp.
+
+    Return safe defaults for window size and color support to prevent crashes when ripgrep queries terminal properties.
+
+Rationale and Alternatives
+
+    Alternative: Develop a native Twizzler search utility from scratch.
+
+    Rationale against: Writing a native tool is excessively time-consuming. Leveraging ripgrep allows us to provide a world-class tool immediately while simultaneously hardening our compatibility layer.
+
+Prior Art
+
+This project scales the methodology used for uuhelper, which successfully ported basic coreutils (such as ls and cat) to Twizzler. ripgrep represents the next evolution in complexity, moving from simple I/O to heavy concurrency.
+Unresolved Questions
+
+    Memory Protection: Does our current mmap implementation support the full range of memory protection flags (PROT_EXEC, PROT_GROWSDOWN, etc.) that ripgrep might expect?
+
+Future Possibilities
+
+If ripgrep runs successfully, it confirms that our mlibc layer is robust enough for high-performance software. This clears the technical debt required to port complex terminal-based editors such as Vim or Helix, bringing Twizzler closer to a full-fledged development environment.
