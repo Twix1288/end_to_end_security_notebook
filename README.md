@@ -18,7 +18,7 @@ User Experience
 Once integrated, users can perform high-speed recursive searches within the Twizzler shell using standard syntax:
 Bash
 
-rg <pattern> (path)
+rg (pattern) (path)
 
 # Developer Impact
 
