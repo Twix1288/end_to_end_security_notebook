@@ -1,4 +1,4 @@
-# Week 1
+# Week 3
 
 # What I Did
 This week, I focused on foundational research to figure out how mlibc, syscalls, and the general porting process might work. I used Devin to help trace through the architecture and get a better grasp of the workflow. Since I am planning to port a new tool, getting this baseline understanding of how C standard libraries interface with the OS was crucial.
