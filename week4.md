@@ -1,12 +1,12 @@
 # Week 4
 
 # What I Did
-I emailed Daniel this week, and he told me about a specific branch he’s been actively updating, which gave me a much better starting point for my work. I also had a really helpful conversation with Sean; he pointed me in the right direction for finding the syscall and sysinfo information I had been struggling with during Week 1.
+With terminal output stabilized as plain text, I pivoted to fixing POSIX environment variable support so we could actually pass flags like NO_COLOR to ripgrep. I uncovered a major cache coherency bug in core.rs: the cgetenv function was caching pointers keyed by their value instead of their variable name!
 
-I spent some time evaluating the toolchain to see if there was anything I needed that wasn't currently there. Furthermore, I dug deeper into ripgrep and realized that porting it is a very CPU-intensive process. I spent a good chunk of time figuring out how to ensure ripgrep has a possibility of working natively with Twizzler's object IDs.
+I rewrote cgetenv to use a Mutex<BTreeMap<String, CString>> keyed by the variable name, ensuring that if a value changes, the CString is replaced in-place, which satisfies the POSIX pointer-stability contract. I also added setenv and unsetenv as #[linkage = "weak"] symbols in syms.rs to provide complete POSIX environment functionality.
 
 # Troubles
-Mapping standard file I/O to an object ID system is proving to be a complex hurdle. Also, tracking down exactly what is missing in the toolchain and ensuring my environment matches up with the changes in Daniel's branch is an ongoing balancing act.
+I hit a strict compiler roadblock: since Rust 1.81, std::env::set_var is deprecated and marked unsafe because it causes data races in multi-threaded programs. Since ripgrep is highly multi-threaded, this was a problem. However, because Twizzler’s threading model is cooperative and environment mutations only happen at the init shell stage (before worker threads spawn), I had to carefully use #[allow(deprecated)] and document the safety invariants to get it to compile.
 
 # Goals and Aspirations
-Get a solid grasp on the object ID implementation for ripgrep and make sure my local toolchain is fully synced up with the latest necessary branches so I can start compiling.
+My goal for next week is to build these Rust-only reference runtime changes using cargo xtask build (thankfully avoiding an hours-long toolchain bootstrap) and run automated tests inside QEMU to ensure variables are passing correctly.
