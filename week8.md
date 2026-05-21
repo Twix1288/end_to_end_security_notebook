@@ -14,11 +14,11 @@
 
 * Bad performance & threading optimization: It runs, but it's definitely not optimized yet. Performance is sluggish and needs heavy tuning. I'm trying to look into how to optimize parallel threading for ripgrep specifically on this architecture. Right now, it feels like we are just forcing rg to work on top of Twizzler by stacking layers, but I want to see if we can actually leverage Twizzler's native benefits—like data-centric memory objects—to make rg faster, instead of just making it compatible.
 
-* object ID confusion: I'm also still pretty lost on object ID usage here. I brought it up with Daniel before he left, and he suggested throwing in flags specifically for reading the object ID. Still trying to wrap my head around how to implement that cleanly since the lifecycle logic and object management are still pretty muddy to me.
+* object ID confusion: I'm also still pretty lost on object ID usage here. I brought it up with Daniel before he left, and he suggested throwing in flags specifically for reading the object ID. Still trying to think about how to implement that cleanly since the lifecycle logic and object management are still pretty muddy to me.
 
 # Reflections
 
-* missing the Tuesday meeting threw me off. Need to be faster about catching up when midterms get in the way.
+* missing the Tuesday meeting due to 16 midterm. Need to get better at communicating meeting mixups
 
 * glad I caught Daniel before his trip, but now that he’s out, I need to stop overthinking the object ID stuff and just start prototyping the flags he talked about, even if the first draft is trash.
 
