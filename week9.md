@@ -1,4 +1,4 @@
-# **Week 7 Update: ripgrep on Twizzler**
+# **Week 9 Update: ripgrep on Twizzler**
 
 ripgrep works on Twizzler now. Here's what I did to make that happen.
 
