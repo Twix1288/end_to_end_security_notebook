@@ -1,47 +1,18 @@
-# Week 10 Report — ripgrep on Twizzler
+# Week 10 — End of Quarter Reflection
+## What I Did This Quarter
 
-## ripgrep on Twizzler — It Finally Works
-After ten weeks of talking to the GitHub AI about Twizzler and grinding through compatibility hell, ripgrep is properly running on Twizzler. Parallel search, regex matching, object-level search, it all works finally without crashing.
+The main thing I worked on was porting ripgrep to Twizzler. That meant touching three crates — crates/cli, crates/core, and crates/ignore — to get search actually working on an OS that doesn't organize data the way Linux does. The biggest additions were the --object-id flag so you can search Twizzler memory objects directly, Twizzler-specific directory traversal that skips inode tracking since Twizzler doesn't expose those the same way POSIX does, a workaround for parallelism since std::thread::available_parallelism() isn't implemented for Twizzler's target triple yet, and a stubbed-out terminal detection that hardcodes is_terminal() to false. After ten weeks it all actually works, the parallel search, regex matching, object-level search without crashing. Engagement-wise, there were definitely weeks where I was more present than others. Missing some sessions due to my computer breaking and a midterm conflict that fell on the same day as lab made it harder to stay in the same flow as everyone else. Looking back, I wish I had spent more time earlier on really understanding the Twizzler object model before diving into the code changes, because a lot of the debugging time came from not fully grasping the memory model at the start.
 
-This is a rough write-up before proper documentation gets finished. The goal is to get down how it actually works, what it needs, and how to run it before any of that gets lost.
+## Participation and Collaboration
+I attended once a week consistently when I could. The sessions I got the most out of were the ones where the conversation was more relaxed and people were actually talking to each other rather than just presenting. The energy from the TA and the other students really set the tone — when it felt friendly, I was way more comfortable contributing. Paper discussions were a mixed reaction for me. Honestly, the papers themselves were hard to follow and I often didn't feel like I fully understood them before discussion. But the conversations around them were usually more interesting than the papers alone, because hearing how other people interpreted things helped it make mroe sense. My comfort with that got better over the quarter just from repetition. There were a few moments where talking to a labmate about what they were building in Twizzler shifted how I was thinking about my own work. Seeeing what other people were adding to the OS made me realize my piece fit into something bigger, which was cool. I did feel like part of the lab community, though I think I could have pushed myself to engage more outside of the lab hours.
 
-##Why We Needed It
-The reason this was worth doing is that Twizzler's memory model is object-based rather than file-based, which means most traditional search tooling just doesn't translate. Getting ripgrep working means there's now a fast search tool that understands Twizzler's native object model and the traditional filesystem layer at the same time.
+## What I Gained
+Coming in, I had only done Rust in practice-problem contexts. Seeing how it actually gets used in a real systems project like dealing with cfg flags, FFI to C runtimes, crate-level architecture was a completely different thing. I also got a much better sense of how research projects actually move. They don't go linearly, and there's a lot of time spent understanding a codebase before you can do anything meaningful with it. The thing that genuinely shifted how I think was realizing how much operating system design shapes what's even possible to build on top of it. Twizzler's object model also entirely changes what search even means. That reframing stuck with me. On the stated goals: I think I made real progress on Rust proficiency and research contribution. Paper reading is still something I have to work at — I don't think I fully cracked how to approach a dense systems paper efficiently. I want to carry forward the habit of actually diving deep into a codebase rather than skimming.
 
-## How the Port Actually Works
-Three crates needed to changes: crates/cli, crates/core, and crates/ignore. The regex engine, the matching logic, the gitignore parser was left alone. The idea was to change as little of the core search logic as possible, because that's the part that makes ripgrep worth using in the first place.
+## Feedback on Course Structure
+The lab format worked for me. Having a dedicated block of time where everyone is working on the same project made it feel collaborative in a way that's hard to replicate async. The three-hour block felt long some days and short others depending on where I was in the work — I probably averaged closer to four or five hours a week total including outside time, not the full six, but the work itself was where it needed to be.
+The paper discussions would have landed better with a little more scaffolding on how to read them before we got into discussion — even just a short guide on what to look for would've helped.
 
-### Searching Twizzler Objects Directly
-The biggest addition is a new flag: --object-id. Twizzler doesn't organize everything into a traditional filesystem hierarchy since data lives in memory objects with object IDs. The flag lets you pass one of those IDs directly to ripgrep.
-The way it works is the object ID gets appended to the list of search paths. Twizzler can memory-map objects into the process address space, so ripgrep treats that mapped region the same way it treats a memory-mapped file on Linux or Windows. No special search codepath was needed because mmap is already how ripgrep prefers to read large files. The flag lives in crates/core/flags/defs.rs and maps into the LowArgs and HiArgs structs that carry configuration through the search pipeline.
+** On AI use: I used it in a few places where I genuinely didn't understand what the code was doing, like the terminal detection section. I tried to make sure I understood the output before using it rather than just copying it, but I'll be honest that the line between "using AI to understand" and "using AI to write" gets blurry sometimes.
 
-### Parallelism
-ripgrep's speed comes from running multiple search workers in parallel. The number of threads it spawns normally comes from std::thread::available_parallelism() — which isn't implemented yet for Twizzler's target triple.
-Rather than hardcoding a thread count, we pull it straight from the OS. Inside crates/ignore/src/walk.rs, behind a #[cfg(target_os = "twizzler")] compile gate, we call twz_rt_get_sysinfo() from Twizzler's C runtime and read the available_parallelism field from the returned system_info struct. That gives an accurate core count so ripgrep can spawn the right number of workers and actually scale to the hardware.
-
-### Directory Traversal
-The ignore and walkdir crates were built around Unix inodes. They use inode numbers to detect symlink loops and avoid hitting the same directory twice. Twizzler doesn't expose inodes the way POSIX does, so the existing code would panic or silently fail trying to call fs::MetadataExt inode methods.
-We wrote Twizzler-specific implementations of DirEntryRaw::from_entry_os and DirEntryRaw::from_path that skip the inode requirements entirely. Directory walking works fine for normal use. The tradeoff is hard-link loop detection is gone for now, which is covered under limitations below. Devin from the deep wiki 
-
-### Terminal Detection
-ripgrep checks whether stdout is a TTY to decide on colorized output and whether to use line buffering or block buffering. That check runs through is_terminal(), which uses ioctl on Unix and handle introspection on Windows. Neither exists on Twizzler right now.
-
-Rather than let it panic, I stubbed it out in crates/cli/src/lib.rs and wtr.rs using a compile-time conditional that hardcodes is_terminal() to false for stdin, stdout, and stderr. It's not a clean solution but it's stable. Google gemini was a good help for this cause I didn't really understand the code for this part very well.
-
-## What You Need to Run It
-A Twizzler build environment with the Rust toolchain targeting twizzler, the Twizzler C runtime available for linking (that's what twz_rt_get_sysinfo() needs), and the patched ripgrep source with changes in crates/cli, crates/core, and crates/ignore. Build it like any other Rust project targeting Twizzler — no special flags beyond the target triple.
-
-## Running It
-* Standard directory search: rg "pattern" ./src
-* Search a Twizzler object by ID: rg "ERROR" --object-id 1234abcd-5678-efgh
-* Search while ignoring gitignore rules and hidden files: rg -uu "debug_trace" .
-* Explicit stdin read if piped input hangs: cat file | rg "pattern" -
-* Help page: rg -help
-
-## Known Limitations
-* No color by default. Because is_terminal() always returns false, ripgrep thinks it's writing to a file and drops color. Pass --color always whenever you want colored output.
-* Block-buffered output. Same root cause — ripgrep defaults to block buffering when it thinks it's not on a TTY. Output can appear in chunks rather than line by line. It's not a correctness issue, it just feels off when using it interactively.
-* No hard-link loop detection. Inode tracking got removed to make directory traversal work. If the Twizzler filesystem has recursive hard-links or bad symlink structures, ripgrep won't catch the loop. Unlikely in practice but worth knowing.
-
-## What's Next
-Proper documentation is getting written now. The main things: fix terminal detection once Twizzler gets ioctl or something equivalent, revisit inode loop detection using a Twizzler-native object identity approach, and make --object-id handle invalid or inaccessible object IDs better.
+** One concrete suggestion: pairing students up on different subprojects earlier in the quarter so there's more cross-pollination on the technical side. A lot of the most useful conversations I had happened kind of by accident — that could be more intentional.
